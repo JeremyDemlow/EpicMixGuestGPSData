@@ -11,6 +11,7 @@ import pandas as pd
 import os
 import logging
 import simplekml
+import shutil
 
 # %% ../nbs/00_GPS_POC.ipynb 13
 def process_coordinate_string(str):
@@ -79,4 +80,5 @@ def create_circle_area_around_lifts(df_lifts,
         result.append(df)
         del df
         i += 1
+    shutil.rmtree(kml_file_dir)
     return pd.concat(result)
