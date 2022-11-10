@@ -6,17 +6,36 @@
 
 # COMMAND ----------
 
-import pyspark.sql.functions as func
+! python -m pip install --upgrade pip
+! pip install shapely
+! pip install pyproj
+! pip install geopandas
+! pip install descartes
+
+# COMMAND ----------
+
 from pyspark.sql.types import * 
 from pyspark.sql.functions import *
 from pyspark.sql import functions, Window
 from pyspark.sql.types import *
 from math import radians, cos, sin, asin, sqrt
-
+from matplotlib import pyplot as plt
 from functools import reduce
 
 import pandas as pd
-from matplotlib import pyplot as plt
+import pyspark.sql.functions as func
+
+# COMMAND ----------
+
+import pandas as pd
+import geopandas as gpd
+from shapely.geometry import Point, Polygon, shape
+from shapely import wkb, wkt
+from pyspark.sql.functions import *
+from pyspark.sql.types import StringType, IntegerType, FloatType, DoubleType,DecimalType
+from pyspark.sql.functions import pandas_udf, PandasUDFType
+import shapely.speedups
+shapely.speedups.enable() # this makes some spatial queries run faster
 
 # COMMAND ----------
 
@@ -111,11 +130,11 @@ display(df)
 # COMMAND ----------
 
 # _ = spark.sql('CREATE DATABASE lumiplan_data')
-_ = spark.sql('''
-  CREATE TABLE lumiplan_data.bronze_sample_extract
-  USING DELTA 
-  LOCATION '/mnt/lumiplan-data/bronze/sample-extract'
-  ''')
+# _ = spark.sql('''
+#   CREATE TABLE lumiplan_data.bronze_sample_extract
+#   USING DELTA 
+#   LOCATION '/mnt/lumiplan-data/bronze/sample-extract'
+#   ''')
 
 # COMMAND ----------
 
@@ -190,10 +209,6 @@ spark.sql('''
 
 # COMMAND ----------
 
-
-
-# COMMAND ----------
-
 day_1 = spark.sql("""
 select 
       DISTINCT geo.skier_id
@@ -230,6 +245,7 @@ with cross_time_skiers as
   from lumiplan_data.DIM_DATE_MINUTE dt
 --   cross join (select distinct skier_id from lumiplan_data.bronze_sample_extract WHERE SKIER_ID in (3114)) geo
   cross join (select distinct skier_id from lumiplan_data.bronze_sample_extract WHERE SKIER_ID in (314430, 313607, 3114)) geo
+--   cross join (select distinct skier_id from lumiplan_data.bronze_sample_extract) geo
   where dt.date = '2022-02-05'
     and date_format(dt.timestamp, 'HH:mm:ss') >= '09:00:00'
     and date_format(dt.timestamp, 'HH:mm:ss') <= '17:00:00'
@@ -490,13 +506,6 @@ _ = spark.sql('''
 
 # COMMAND ----------
 
-40.68650289353013, -111.55949629086884
-
-40.67707
--111.57812
-
-# COMMAND ----------
-
 lift_data = spark.sql('''
 SELECT *, (latitude, longitude) as lat_long
 FROM lumiplan_data.lift_data
@@ -506,9 +515,161 @@ display(lift_data)
 
 # COMMAND ----------
 
-test = pd_lift_data.set_index('resortkey')[['lat_long']].T
-test.columns = [col[0] for col in lift_data.select('liftname').distinct().collect()]
-test
+# test = pd_lift_data.set_index('resortkey')[['lat_long']].T
+# test.columns = [col[0] for col in lift_data.select('liftname').distinct().collect()]
+
+# COMMAND ----------
+
+# MAGIC %md ## Grabbing Geo Circles Created In Github Repo
+# MAGIC 
+# MAGIC [How Geo Circles Are Being Created](https://github.com/JeremyDemlow/EpicMixGuestGPSData/blob/main/nbs/00_GPS_POC.ipynb)
+# MAGIC 
+# MAGIC Eventually we would like to get out of this db env allowing for better documentation processes and being more iterative
+
+# COMMAND ----------
+
+from data_system_utilities.snowflake.query import Snowflake
+from data_system_utilities.snowflake.utils import create_table_query_from_df
+from matplotlib import pyplot as plt
+
+from shapely.geometry import Point
+from shapely.geometry.polygon import Polygon
+
+# create new snowflake data asset
+sf = Snowflake(
+    sfAccount=os.environ['sfAccount'],
+    sfUser=os.environ['sfUser'],
+    sfPswd=os.environ['sfPswd'],
+    sfWarehouse=os.environ['sfWarehouse'],
+    sfDatabase=os.environ['sfDatabase'],
+    sfSchema='WAITTIMES',
+    sfRole=os.environ['sfRole']
+)
+geo_cirle_sp = sf.run_sql_str('''SELECT * FROM lat_lon_lift_circle_waitime_qa''')
+geo_cirles
+
+# COMMAND ----------
+
+geo_cirles_sp = sf.run_sql_str('''SELECT * FROM lat_lon_lift_circle_waitime_qa_shapely''')
+geo_cirles_sp
+
+# COMMAND ----------
+
+def lat_lon_in_cirle(geo_cricle_df, liftname, lat, lon):
+    lift_name = 'Saddleback Express'
+    lons_lats_vect = geo_cirles_sp[geo_cirles_sp.LIFTNAME == lift_name][['LAT', 'LON']].values
+    polygon = Polygon(lons_lats_vect)
+    point = Point(lat, lon) # create point
+    if polygon.contains(point) or point.within(polygon) or polygon.touches(point):
+        return True
+    return False
+
+# COMMAND ----------
+
+test.shape
+
+# COMMAND ----------
+
+lift_name = 'Saddleback Express'
+
+# COMMAND ----------
+
+test[lift_name.replace(' ', '_')] = test.apply(lambda x: lat_lon_in_cirle(geo_cirles_sp, lift_name, x['latitude_int'], x['longitude_int']), axis=1)
+
+# COMMAND ----------
+
+test[['skier_id','latitude','longitude','total_gps_points', 'timestamp', 'latitude_int','longitude_int', 'distance','speed','km_from_Saddleback_Express','Saddleback_Express', 'with_in_Saddleback_Express']].head()
+
+# COMMAND ----------
+
+plt.rcParams["figure.figsize"] = (10,10)
+plt.plot(test[~(test.latitude_int_next.isna())].loc[180:215]['km_from_Saddleback_Express'].reset_index(drop=True), label='distance')
+plt.plot(test[~(test.latitude_int_next.isna())].loc[180:215].speed.reset_index(drop=True), label = 'speed')
+plt.axhline(y=50, color = 'r', linestyle = '-')
+plt.axhline(y=5, color = 'g', linestyle = '-')
+plt.axhline(y=0, color = 'black', linestyle = '-')
+plt.ylim(-10, 150)
+plt.legend()
+plt.show()
+
+# COMMAND ----------
+
+test_sample = test[test.with_in_Saddleback_Express]
+test_sample.shape
+
+# COMMAND ----------
+
+sample_geo = geo_cirle_sp[geo_cirle_sp.LIFTNAME == lift_name]
+sample_lift = pd_lift[pd_lift.liftname == lift_name]
+plt.plot(test_sample.latitude_int, test_sample.longitude_int, 'x', color='g')
+plt.plot(test_sample[test.with_in_Saddleback_Express].latitude_int, test_sample[test.with_in_Saddleback_Express].longitude_int, 'o', color='r')
+plt.plot(test_sample[test.Saddleback_Express].latitude_int, test_sample[test.Saddleback_Express].longitude_int, 'o', color='b')
+plt.plot(sample_lift.latitude, sample_lift.longitude, '^', label=lift_name+'lift_location' )
+plt.plot(sample_geo.LAT, sample_geo.LON, label=lift_name+'current_poc_maze')
+plt.ylim(-111.579092, -111.576092)
+plt.xlim(40.676, 40.678)
+plt.legend()
+plt.show()
+
+# COMMAND ----------
+
+plt.plot(create_cirlce(pd_lift_data[pd_lift_data.liftname==x].latitude.values[0], pd_lift_data[pd_lift_data.liftname==x].longitude.values[0], 0.0009).set_index('lat').long, label=x)
+
+# COMMAND ----------
+
+
+plt.rcParams["figure.figsize"] = (10,10)
+plt.legend(loc="upper left")
+pd_lift_data = lift_data.toPandas()
+plt.plot(df_speed.filter(df_filled.skier_id == 3114).toPandas().set_index('latitude_int').longitude_int, label='interpolated')
+# for x in pd_lift_data[pd_lift_data.resortkey == 16].liftname.tolist():
+for x in ['Sunrise', 'Saddleback Express', 'Peak 5',  'DreamScape', 'Motherlode Express', 'Sweet Pea']:
+    plt.plot(create_cirlce(pd_lift_data[pd_lift_data.liftname==x].latitude.values[0], 
+                           pd_lift_data[pd_lift_data.liftname==x].longitude.values[0], 0.0009).set_index('lat').long, label=x)
+plt.legend()
+plt.show()
+
+# COMMAND ----------
+
+df.apply(lambda x: get_distance(x['longitude_int_next'], x['latitude_int_next'], lat_long[1], lat_long[0]) * 1094, axis=1)
+
+# COMMAND ----------
+
+# Think about saving the python object inside of snowflake might eliminate the need to recreate the polygon
+# Quick attempt didn't seem to work, but not meaning it can't be done
+lifts = geo_cirles_sp.LIFTNAME.unique()
+for l in lifts:
+    lons_lats_vect = geo_cirles_sp[geo_cirles_sp.LIFTNAME == l][['LAT', 'LON']].values
+    
+
+
+for idx, lat_long in enumerate([(lat, lon) for lat, long in zip(geo_cirles_sp.LAT, geo_cirles_sp.LON)]):
+    print(lat_long)
+#     lift_name = 'Saddleback Express'
+#     lons_lats_vect = geo_cirles_sp[geo_cirles_sp.LIFTNAME == lift_name][['LAT', 'LON']].values
+#     df.apply(lambda x: get_distance(x['longitude_int_next'], x['latitude_int_next'], lat_long[1], lat_long[0]) * 1094, axis=1)
+#     polygon = Polygon(lons_lats_vect) # create polygon
+#     polygon.contains(point) # check if polygon contains point
+#     point.within(polygon) # check if a point is in the polygon 
+#     polygon.touches(point) # check if point lies on border of polygon 
+
+# COMMAND ----------
+
+for idx, lat_long in enumerate([(lat, long) for lat, long in zip(pd_lift.latitude, pd_lift.longitude)]):
+    # 3281 ~ km --> feet # with in 150 feet
+    test[f"km_from_{pd_lift.loc[idx].liftname.replace(' ', '_')}"] = df.apply(lambda x: get_distance(x['longitude_int_next'], x['latitude_int_next'], lat_long[1], lat_long[0]) * 1094, axis=1)
+    test[f"with_in_{pd_lift.loc[idx].liftname.replace(' ', '_')}"] = df.apply(lambda x: False if (get_distance(x['longitude_int_next'], x['latitude_int_next'], lat_long[1], lat_long[0]) * 1094) > 50 else True, axis=1)
+
+# COMMAND ----------
+
+# Think about saving the python object inside of snowflake might eliminate the need to recreate the polygon
+# Quick attempt didn't seem to work, but not meaning it can't be done
+lift_name = 'Saddleback Express'
+lons_lats_vect = geo_cirles_sp[geo_cirles_sp.LIFTNAME == lift_name][['LAT', 'LON']].values
+polygon = Polygon(lons_lats_vect) # create polygon
+print(polygon.contains(point)) # check if polygon contains point
+print(point.within(polygon)) # check if a point is in the polygon 
+print(polygon.touches(point)) # check if point lies on border of polygon 
 
 # COMMAND ----------
 
@@ -541,8 +702,7 @@ df_next = df_next[newColumns]
 
 # COMMAND ----------
 
-df_speed = df_filled['skier_id', 'timestamp', 'latitude', 'longitude',
-                     'latitude_int', 'longitude_int', 'total_gap', 'current_gap', 'timestamp_before'].join(
+df_speed = df_filled.join(
     df_next,
     on = (
           (df_filled.timestamp_before == df_next.timestamp_next)
@@ -645,10 +805,6 @@ udf_within_range = func.udf(within_range, DoubleType())
 
 # COMMAND ----------
 
-display(df_speed)
-
-# COMMAND ----------
-
 pd_lift = lift_data.toPandas()
 df = df_speed.toPandas()
 
@@ -662,6 +818,10 @@ for idx, lat_long in enumerate([(lat, long) for lat, long in zip(pd_lift.latitud
     # 3281 ~ km --> feet # with in 150 feet
     test[f"km_from_{pd_lift.loc[idx].liftname.replace(' ', '_')}"] = df.apply(lambda x: get_distance(x['longitude_int_next'], x['latitude_int_next'], lat_long[1], lat_long[0]) * 1094, axis=1)
     test[f"with_in_{pd_lift.loc[idx].liftname.replace(' ', '_')}"] = df.apply(lambda x: False if (get_distance(x['longitude_int_next'], x['latitude_int_next'], lat_long[1], lat_long[0]) * 1094) > 50 else True, axis=1)
+
+# COMMAND ----------
+
+test.shape
 
 # COMMAND ----------
 
@@ -745,15 +905,7 @@ test[~(test.latitude_int_next.isna())].loc[300:350]
 
 # COMMAND ----------
 
-plt.rcParams["figure.figsize"] = (10,10)
-plt.plot(test[~(test.latitude_int_next.isna())].loc[300:350]['km_from_Saddleback_Express'].reset_index(drop=True), label='distance')
-plt.plot(test[~(test.latitude_int_next.isna())].loc[300:350].speed.reset_index(drop=True), label = 'speed')
-plt.axhline(y=50, color = 'r', linestyle = '-')
-plt.axhline(y=5, color = 'g', linestyle = '-')
-plt.axhline(y=0, color = 'black', linestyle = '-')
-plt.ylim(-10, 150)
-plt.legend()
-plt.show()
+
 
 # COMMAND ----------
 
