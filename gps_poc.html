@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.1.251">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Build snowflake data asset with lat/long combinations to begin waittime QA development">
+
+<title>EpicMixGuestGPSData - Epic Mix Guest GPS POC</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1.6em;
+  vertical-align: middle;
+}
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit"
+  }
+}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" integrity="sha512-c3Nl8+7g4LMSTdrm621y7kf9v3SDPnhxLNhcjFJbKECVnmZHTdo+IRO05sNLTH/D3vA6u1X32ehoLC7WFVdheg==" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script>
+<script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
+
+
+<link rel="stylesheet" href="styles.css">
+<meta property="og:title" content="EpicMixGuestGPSData - Epic Mix Guest GPS POC">
+<meta property="og:description" content="Build snowflake data asset with lat/long combinations to begin waittime QA development">
+<meta property="og:site-name" content="EpicMixGuestGPSData">
+<meta name="twitter:title" content="EpicMixGuestGPSData - Epic Mix Guest GPS POC">
+<meta name="twitter:description" content="Build snowflake data asset with lat/long combinations to begin waittime QA development">
+<meta name="twitter:card" content="summary">
+</head>
+
+<body class="nav-sidebar floating nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">EpicMixGuestGPSData</span>
+    </a>
+  </div>
+          <div id="quarto-search" class="" title="Search"></div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+    <div class="container-fluid d-flex justify-content-between">
+      <h1 class="quarto-secondary-nav-title">Epic Mix Guest GPS POC</h1>
+      <button type="button" class="quarto-btn-toggle btn" aria-label="Show secondary navigation">
+        <i class="bi bi-chevron-right"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">EpicMixGuestGPSData</a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./gps_poc.html" class="sidebar-item-text sidebar-link active">Epic Mix Guest GPS POC</a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#snowflake_poc_table_grab" id="toc-snowflake_poc_table_grab" class="nav-link active" data-scroll-target="#snowflake_poc_table_grab">snowflake_poc_table_grab</a></li>
+  <li><a href="#creating-latlon-circles-around-the-lifts" id="toc-creating-latlon-circles-around-the-lifts" class="nav-link" data-scroll-target="#creating-latlon-circles-around-the-lifts">Creating Lat/Lon Circles Around The Lifts</a>
+  <ul class="collapse">
+  <li><a href="#functions" id="toc-functions" class="nav-link" data-scroll-target="#functions">Functions</a>
+  <ul class="collapse">
+  <li><a href="#process_coordinate_string" id="toc-process_coordinate_string" class="nav-link" data-scroll-target="#process_coordinate_string">process_coordinate_string</a></li>
+  <li><a href="#process_coordinate_string-1" id="toc-process_coordinate_string-1" class="nav-link" data-scroll-target="#process_coordinate_string-1">process_coordinate_string</a></li>
+  <li><a href="#kml2csv" id="toc-kml2csv" class="nav-link" data-scroll-target="#kml2csv">kml2csv</a></li>
+  <li><a href="#kml2csv-1" id="toc-kml2csv-1" class="nav-link" data-scroll-target="#kml2csv-1">kml2csv</a></li>
+  <li><a href="#create_circle_area_around_lifts" id="toc-create_circle_area_around_lifts" class="nav-link" data-scroll-target="#create_circle_area_around_lifts">create_circle_area_around_lifts</a></li>
+  <li><a href="#create_circle_area_around_lifts-1" id="toc-create_circle_area_around_lifts-1" class="nav-link" data-scroll-target="#create_circle_area_around_lifts-1">create_circle_area_around_lifts</a></li>
+  </ul></li>
+  <li><a href="#example" id="toc-example" class="nav-link" data-scroll-target="#example">Example</a></li>
+  </ul></li>
+  <li><a href="#pyspark-read-azure-gps-data-for-development" id="toc-pyspark-read-azure-gps-data-for-development" class="nav-link" data-scroll-target="#pyspark-read-azure-gps-data-for-development">Pyspark Read Azure GPS Data For Development</a></li>
+  </ul>
+<div class="toc-actions"><div><i class="bi bi-github"></i></div><div class="action-links"><p><a href="https://github.com/JeremyDemlow/EpicMixGuestGPSData/issues/new" class="toc-action">Report an issue</a></p></div></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title d-none d-lg-block">Epic Mix Guest GPS POC</h1>
+</div>
+
+<div>
+  <div class="description">
+    Build snowflake data asset with lat/long combinations to begin waittime QA development
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    
+    
+  </div>
+  
+
+</header>
+
+<!-- WARNING: THIS FILE WAS AUTOGENERATED! DO NOT EDIT! -->
+<p>This is the first data source need for the GPS POC wait times development project.</p>
+<p>As of right now we are most likely going to be taking advantage of the Databricks Spark Engine or we might move it completely to a Snowpark Engine, which really the same thing, but both are under development in which one works best for the future prospects of the company.</p>
+<section id="snowflake_poc_table_grab" class="level1">
+<h1>snowflake_poc_table_grab</h1>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> snowflake_poc_table_grab(sf_connection):</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Grab the data from a snowflake to allow for play on GPS Data"</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="ss">f'Hello </span><span class="sc">{</span>sf_connection<span class="sc">}</span><span class="ss">!'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>snowflake_poc_table_grab(<span class="st">'Need a suggestion'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<pre><code>'Hello Need a suggestion!'</code></pre>
+</div>
+</div>
+</section>
+<section id="creating-latlon-circles-around-the-lifts" class="level1">
+<h1>Creating Lat/Lon Circles Around The Lifts</h1>
+<section id="functions" class="level2">
+<h2 class="anchored" data-anchor-id="functions">Functions</h2>
+<section id="process_coordinate_string" class="level3">
+<h3 class="anchored" data-anchor-id="process_coordinate_string">process_coordinate_string</h3>
+<hr>
+<p><a href="https://github.com/JeremyDemlow/EpicMixGuestGPSData/blob/main/EpicMixGuestGPSData/poc_gps.py#L17" target="_blank" style="float:right; font-size:smaller">source</a></p>
+</section>
+<section id="process_coordinate_string-1" class="level3">
+<h3 class="anchored" data-anchor-id="process_coordinate_string-1">process_coordinate_string</h3>
+<blockquote class="blockquote">
+<pre><code> process_coordinate_string (str)</code></pre>
+</blockquote>
+</section>
+<section id="kml2csv" class="level3">
+<h3 class="anchored" data-anchor-id="kml2csv">kml2csv</h3>
+<hr>
+<p><a href="https://github.com/JeremyDemlow/EpicMixGuestGPSData/blob/main/EpicMixGuestGPSData/poc_gps.py#L30" target="_blank" style="float:right; font-size:smaller">source</a></p>
+</section>
+<section id="kml2csv-1" class="level3">
+<h3 class="anchored" data-anchor-id="kml2csv-1">kml2csv</h3>
+<blockquote class="blockquote">
+<pre><code> kml2csv (fname)</code></pre>
+</blockquote>
+<p>Open the KML. Read the KML. Open a CSV file. Process a coordinate string to be a CSV row. Input: Filename with extension (‘example.kml’), located in ‘kml’ folder. Output: File with the same name as input, but in .csv format, located in ‘csv’ folder.</p>
+</section>
+<section id="create_circle_area_around_lifts" class="level3">
+<h3 class="anchored" data-anchor-id="create_circle_area_around_lifts">create_circle_area_around_lifts</h3>
+<hr>
+<p><a href="https://github.com/JeremyDemlow/EpicMixGuestGPSData/blob/main/EpicMixGuestGPSData/poc_gps.py#L52" target="_blank" style="float:right; font-size:smaller">source</a></p>
+</section>
+<section id="create_circle_area_around_lifts-1" class="level3">
+<h3 class="anchored" data-anchor-id="create_circle_area_around_lifts-1">create_circle_area_around_lifts</h3>
+<blockquote class="blockquote">
+<pre><code> create_circle_area_around_lifts (df_lifts, file_name:str,
+                                  kml_file_dir:str=None,
+                                  number_of_vertices:int=36,
+                                  radius:int=30, delete_kml:bool=True)</code></pre>
+</blockquote>
+</section>
+</section>
+<section id="example" class="level2">
+<h2 class="anchored" data-anchor-id="example">Example</h2>
+<p>This will be the part that needs the most work from this POC perspective as the creations of differing circle sizes is not the challenge right now the challenge is to create appropriate centroids to the lift mazes so that we can create better locations rather than something as follows:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="00_GPS_POC_files/figure-html/image.png" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">image.png</figcaption><p></p>
+</figure>
+</div>
+<p>Right now we are going to run into over laps because of the size but additionally lifts are close together what could really fix this would be the idea that we weren’t stuck to the geo lat/lon of where the lift is exactly and this overlap wouldn’t be much of an issue.</p>
+<p>Seen below is a radius of 40 meters so making them smaller to a 30 default is what you can see inside of the functional call, but again the size of the circle is the easiest part of all of this.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="00_GPS_POC_files/figure-html/image.png" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">image.png</figcaption><p></p>
+</figure>
+</div>
+<p>What this would look like if we changed the centroid this is what we will be looking to do with this simple change</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> data_system_utilities.snowflake.query <span class="im">import</span> Snowflake</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> data_system_utilities.snowflake.utils <span class="im">import</span> create_table_query_from_df</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> matplotlib <span class="im">import</span> pyplot <span class="im">as</span> plt</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>/opt/hostedtoolcache/Python/3.9.15/x64/lib/python3.9/site-packages/snowflake/connector/options.py:96: UserWarning: You have an incompatible version of 'pyarrow' installed (6.0.0), please install a version that adheres to: 'pyarrow&lt;8.1.0,&gt;=8.0.0; extra == "pandas"'
+  warn_incompatible_dep(
+INFO:matplotlib.font_manager:Failed to extract font properties from /usr/share/fonts/truetype/noto/NotoColorEmoji.ttf: In FT2Font: Can not load face (unknown file format; error code 0x2)
+INFO:matplotlib.font_manager:generated new fontManager</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Pulling in current lift lat long data locations</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>sf <span class="op">=</span> Snowflake(</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    sfAccount<span class="op">=</span>os.environ[<span class="st">'sfAccount'</span>],</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    sfUser<span class="op">=</span>os.environ[<span class="st">'sfUser'</span>],</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    sfPswd<span class="op">=</span>os.environ[<span class="st">'sfPswd'</span>],</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    sfWarehouse<span class="op">=</span>os.environ[<span class="st">'sfWarehouse'</span>],</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    sfDatabase<span class="op">=</span>os.environ[<span class="st">'sfDatabase'</span>],</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    sfSchema<span class="op">=</span>os.environ[<span class="st">'sfSchema'</span>],</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    sfRole<span class="op">=</span>os.environ[<span class="st">'sfRole'</span>]</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>df_lifts <span class="op">=</span> sf.run_sql_str(<span class="st">'''SELECT * </span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="st">    FROM ONMOUNTAIN.PROD.LIFTDIMENSIONS</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a><span class="st">    WHERE LATITUDE IS NOT NULL AND LONGITUDE IS NOT NULL</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a><span class="st">'''</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>df_lifts.columns <span class="op">=</span> [x.lower() <span class="cf">for</span> x <span class="kw">in</span> df_lifts.columns]</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>df_lifts <span class="op">=</span> df_lifts[[<span class="st">'resortname'</span>,<span class="st">'resortkey'</span>, <span class="st">'liftname'</span>, <span class="st">'latitude'</span>, <span class="st">'longitude'</span>]]</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>display(df_lifts.head())</span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>os.makedirs(<span class="st">'./testlift/'</span>, exist_ok<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>df_lat_lon <span class="op">=</span> create_circle_area_around_lifts(df_lifts, </span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>                                            file_name<span class="op">=</span><span class="st">'point_kml.kml'</span>,</span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>                                            kml_file_dir<span class="op">=</span><span class="st">'./testlift/'</span>,</span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>                                            delete_kml<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>display(df_lat_lon.head())</span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a><span class="co"># create new snowflake data asset</span></span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>sf <span class="op">=</span> Snowflake(</span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>    sfAccount<span class="op">=</span>os.environ[<span class="st">'sfAccount'</span>],</span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a>    sfUser<span class="op">=</span>os.environ[<span class="st">'sfUser'</span>],</span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a>    sfPswd<span class="op">=</span>os.environ[<span class="st">'sfPswd'</span>],</span>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a>    sfWarehouse<span class="op">=</span>os.environ[<span class="st">'sfWarehouse'</span>],</span>
+<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a>    sfDatabase<span class="op">=</span>os.environ[<span class="st">'sfDatabase'</span>],</span>
+<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a>    sfSchema<span class="op">=</span><span class="st">'WAITTIMES'</span>,</span>
+<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a>    sfRole<span class="op">=</span>os.environ[<span class="st">'sfRole'</span>]</span>
+<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a>table_query <span class="op">=</span> create_table_query_from_df(df_lat_lon, </span>
+<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a>                                        <span class="st">'MACHINELEARNINGOUTPUTS.WAITTIMES.lat_lon_lift_circle_waitime_qa'</span>,</span>
+<span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a>                                        <span class="va">True</span>)</span>
+<span id="cb9-40"><a href="#cb9-40" aria-hidden="true" tabindex="-1"></a>sf.run_sql_str(table_query)</span>
+<span id="cb9-41"><a href="#cb9-41" aria-hidden="true" tabindex="-1"></a>sf.infer_to_snowflake(df<span class="op">=</span>df_lat_lon, table_name<span class="op">=</span><span class="st">'lat_lon_lift_circle_waitime_qa'</span>, if_exists<span class="op">=</span><span class="st">'replace'</span>)</span>
+<span id="cb9-42"><a href="#cb9-42" aria-hidden="true" tabindex="-1"></a>sf.run_sql_str(<span class="st">'''SELECT *</span></span>
+<span id="cb9-43"><a href="#cb9-43" aria-hidden="true" tabindex="-1"></a><span class="st">               FROM lat_lon_lift_circle_waitime_qa</span></span>
+<span id="cb9-44"><a href="#cb9-44" aria-hidden="true" tabindex="-1"></a><span class="st">               where liftname = 'Arrow Bahn'</span></span>
+<span id="cb9-45"><a href="#cb9-45" aria-hidden="true" tabindex="-1"></a><span class="st">               LIMIT 5</span></span>
+<span id="cb9-46"><a href="#cb9-46" aria-hidden="true" tabindex="-1"></a><span class="st">               '''</span>)</span>
+<span id="cb9-47"><a href="#cb9-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-48"><a href="#cb9-48" aria-hidden="true" tabindex="-1"></a><span class="co"># quick check to see if the function is working as intended</span></span>
+<span id="cb9-49"><a href="#cb9-49" aria-hidden="true" tabindex="-1"></a>lift_name <span class="op">=</span> <span class="st">'Arrow Bahn'</span></span>
+<span id="cb9-50"><a href="#cb9-50" aria-hidden="true" tabindex="-1"></a>plt.plot(df_lat_lon[df_lat_lon.LIFTNAME <span class="op">==</span> lift_name].LAT,  df_lat_lon[df_lat_lon.LIFTNAME <span class="op">==</span> lift_name].LON)</span>
+<span id="cb9-51"><a href="#cb9-51" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>INFO:data_system_utilities.snowflake.utils:connection to snowflake established...
+INFO:data_system_utilities.snowflake.query:executing query
+INFO:data_system_utilities.snowflake.query:data loaded from snowflake
+INFO:data_system_utilities.snowflake.query:connection to snowflake has been turned off</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+
+<div>
+
+<table class="dataframe table table-sm table-striped">
+  <thead>
+    <tr>
+      <th></th>
+      <th>resortname</th>
+      <th>resortkey</th>
+      <th>liftname</th>
+      <th>latitude</th>
+      <th>longitude</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Beaver Creek Resort</td>
+      <td>2</td>
+      <td>Arrow Bahn</td>
+      <td>39.632572</td>
+      <td>-106.562612</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Beaver Creek Resort</td>
+      <td>2</td>
+      <td>Bachelor Gulch Express</td>
+      <td>39.622782</td>
+      <td>-106.541801</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Beaver Creek Resort</td>
+      <td>2</td>
+      <td>Birds of Prey Express</td>
+      <td>39.585960</td>
+      <td>-106.525253</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>Beaver Creek Resort</td>
+      <td>2</td>
+      <td>Centennial Express</td>
+      <td>39.602749</td>
+      <td>-106.516956</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>Beaver Creek Resort</td>
+      <td>2</td>
+      <td>Cinch Express</td>
+      <td>39.582695</td>
+      <td>-106.508131</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>INFO:root:Total number of lifts being updated 245</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+
+<div>
+
+<table class="dataframe table table-sm table-striped">
+  <thead>
+    <tr>
+      <th></th>
+      <th>lat</th>
+      <th>lon</th>
+      <th>liftname</th>
+      <th>resortname</th>
+      <th>resortkey</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>39.632838</td>
+      <td>-106.562551</td>
+      <td>Arrow Bahn</td>
+      <td>Beaver Creek Resort</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>39.632826</td>
+      <td>-106.562492</td>
+      <td>Arrow Bahn</td>
+      <td>Beaver Creek Resort</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>39.632806</td>
+      <td>-106.562437</td>
+      <td>Arrow Bahn</td>
+      <td>Beaver Creek Resort</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>39.632779</td>
+      <td>-106.562387</td>
+      <td>Arrow Bahn</td>
+      <td>Beaver Creek Resort</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>39.632746</td>
+      <td>-106.562344</td>
+      <td>Arrow Bahn</td>
+      <td>Beaver Creek Resort</td>
+      <td>2</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>INFO:root:
+        create or replace table MACHINELEARNINGOUTPUTS.WAITTIMES.lat_lon_lift_circle_waitime_qa (lat VARCHAR, lon VARCHAR, liftname VARCHAR, resortname VARCHAR, resortkey VARCHAR);
+        
+INFO:data_system_utilities.snowflake.utils:connection to snowflake established...
+INFO:data_system_utilities.snowflake.query:executing query
+INFO:data_system_utilities.snowflake.query:data loaded from snowflake
+INFO:data_system_utilities.snowflake.query:connection to snowflake has been turned off
+INFO:data_system_utilities.snowflake.query:Table LAT_LON_LIFT_CIRCLE_WAITIME_QA successfully created.
+INFO:data_system_utilities.snowflake.query:creating table lat_lon_lift_circle_waitime_qa
+INFO:data_system_utilities.snowflake.query:sqlalchemy snowflake engine created
+INFO:data_system_utilities.snowflake.query:table created
+INFO:data_system_utilities.snowflake.utils:connection to snowflake established...
+INFO:data_system_utilities.snowflake.query:executing query
+INFO:data_system_utilities.snowflake.query:data loaded from snowflake
+INFO:data_system_utilities.snowflake.query:connection to snowflake has been turned off</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="00_GPS_POC_files/figure-html/cell-8-output-6.png" class="img-fluid"></p>
+</div>
+</div>
+</section>
+</section>
+<section id="pyspark-read-azure-gps-data-for-development" class="level1">
+<h1>Pyspark Read Azure GPS Data For Development</h1>
+<blockquote class="blockquote">
+<p>I wish databricks was actively working on the connection between their clusters and python, but that is a couple of tracks of work that will come together at some point so for now this is a nice to have. I will be moving towards working in docker locally and trying to avoid issues with the mac so that this can be tested more easily and better documented outside of the databricks ecosystem</p>
+</blockquote>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    setTimeout(function() {
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const cites = ref.parentNode.getAttribute('data-cites').split(' ');
+    tippyHover(ref, function() {
+      var popup = window.document.createElement('div');
+      cites.forEach(function(cite) {
+        var citeDiv = window.document.createElement('div');
+        citeDiv.classList.add('hanging-indent');
+        citeDiv.classList.add('csl-entry');
+        var biblioDiv = window.document.getElementById('ref-' + cite);
+        if (biblioDiv) {
+          citeDiv.innerHTML = biblioDiv.innerHTML;
+        }
+        popup.appendChild(citeDiv);
+      });
+      return popup.innerHTML;
+    });
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>
