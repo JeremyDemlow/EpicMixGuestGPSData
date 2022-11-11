@@ -1,8 +1,0 @@
-version: "3" # Use version 3.0 or above
-services:
-  gps_testing:
-    build: .
-    env_file:
-      - .env
-    volumes:
-      - .:/EPICMIXGUESTGPSDATA/:rw

@@ -1,9 +1,0 @@
-project:
-  output-dir: _docs
-
-website:
-  title: "EpicMixGuestGPSData"
-  site-url: "https://JeremyDemlow.github.io/EpicMixGuestGPSData"
-  description: "Vail GPS Poc Project"
-  repo-branch: main
-  repo-url: "https://github.com/JeremyDemlow/EpicMixGuestGPSData"
